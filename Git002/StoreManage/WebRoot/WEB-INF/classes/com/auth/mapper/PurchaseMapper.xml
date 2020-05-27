@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.auth.mapper.PurchaseMapper" >
+  <resultMap id="purchaseMapper" type="com.auth.entity.Purchase" >
+    <id column="buy_id" property="buyId" jdbcType="INTEGER" />
+    <result column="product_id" property="productId" jdbcType="INTEGER" />
+    <result column="product_name" property="productName" jdbcType="VARCHAR" />
+    <result column="store_id" property="storeId" jdbcType="INTEGER" />
+    <result column="store_name" property="storeName" jdbcType="VARCHAR" />
+    <result column="buy_num" property="buyNum" jdbcType="DECIMAL" />
+    <result column="fact_buy_num" property="factBuyNum" jdbcType="DECIMAL" />
+    <result column="buy_time" property="buyTime" jdbcType="TIMESTAMP" />
+    <result column="startTime" property="startTime" jdbcType="TIMESTAMP" />
+    <result column="endTime" property="endTime" jdbcType="TIMESTAMP" />
+    <result column="supply_id" property="supplyId" jdbcType="INTEGER" />
+    <result column="place_id" property="placeId" jdbcType="INTEGER" />
+    <result column="buy_user" property="buyUser" jdbcType="VARCHAR" />
+    <result column="phone" property="phone" jdbcType="VARCHAR" />
+    <result column="is_in" property="isIn" jdbcType="CHAR" />
+  </resultMap>
+  
+  <!-- 查询采购单个数 -->
+	<select id="selectCount" parameterType="java.util.HashMap"
+		resultType="java.lang.Integer">
+		select COUNT(0) from `buy_list`
+		<where>
+			<if test="purchase.storeId!=null and purchase.storeId!=''">
+				and store_id = #{purchase.storeId}
+			</if>
+			<if test="purchase.productName!=null and purchase.productName!=''">
+				and`productName`(product_id) Like CONCAT('%',#{purchase.productName},'%')
+			</if>
+			<if test="purchase.buyUser!=null and purchase.buyUser!=''">
+				and `buy_user` Like CONCAT('%',#{purchase.buyUser},'%') 
+			</if>
+			<if test="purchase.isIn!=null and purchase.isIn!=''">
+				and `is_in` = #{purchase.isIn}
+			</if>
+			<if test="purchase.startTime!= null and purchase.startTime!=''">
+				and buy_id in 
+					(SELECT `buy_id` FROM `buy_list` WHERE `buy_time` &gt;=#{purchase.startTime})
+			</if>
+			<if test="purchase.endTime!= null and purchase.endTime!=''">
+				and buy_id in 
+				(SELECT `buy_id` FROM `buy_list` WHERE `buy_time`  &lt;=#{purchase.endTime})
+			</if>
+		</where>
+
+	</select>
+  
+  <!-- 分页查询sql语句 -->
+  <select id="purchasePageQuery" parameterType="java.util.HashMap" resultMap="purchaseMapper" >
+  	select buy_id,product_id, `productName`(product_id) AS product_name ,store_id,GET_StoreName_By_StoreId(store_id) AS store_name,  buy_num, fact_buy_num, buy_time, supply_id,
+  	 place_id, buy_user, phone, is_in from `buy_list`
+		<where>
+			<if test="purchase.storeId!=null and purchase.storeId!=''">
+				and store_id = #{purchase.storeId}
+			</if>
+			<if test="purchase.productName!=null and purchase.productName!=''">
+				and`productName`(product_id) Like CONCAT('%',#{purchase.productName},'%')
+			</if>
+			<if test="purchase.buyUser!=null and purchase.buyUser!=''">
+				and `buy_user` Like CONCAT('%',#{purchase.buyUser},'%') 
+			</if>
+			<if test="purchase.isIn!=null and purchase.isIn!=''">
+				and `is_in` = #{purchase.isIn}
+			</if>
+			<if test="purchase.startTime!= null and purchase.startTime!=''">
+				and buy_id in 
+					(SELECT `buy_id` FROM `buy_list` WHERE `buy_time` &gt;=#{purchase.startTime})
+			</if>
+			<if test="purchase.endTime!= null and purchase.endTime!=''">
+				and buy_id in 
+				(SELECT `buy_id` FROM `buy_list` WHERE `buy_time`  &lt;=#{purchase.endTime})
+			</if>
+		</where>
+			ORDER BY `buy_time` DESC LIMIT #{Page.pageIndex},#{Page.pageNum} 
+  </select>
+  
+  <!-- 添加采购单 -->
+  <insert id="savePurchase" parameterType="com.auth.entity.Purchase" >
+    insert into buy_list (product_id, store_id, buy_num, buy_time, 
+		supply_id,place_id, buy_user, phone, is_in)values 
+			(#{productId}, #{storeId}, #{buyNum},
+				 NOW(), #{supplyId}, #{placeId}, #{buyUser}, #{phone},0)
+  </insert>
+  
+  <!-- 是否生成入库单（入库） -->
+  <update id="getStoreTable" parameterType="java.lang.Integer" >
+  	UPDATE `buy_list` SET is_in=1 where buy_id = #{buyId}
+  </update>
+  
+  <!-- 更新采购单数量 -->
+  <update id="updateNums" parameterType="com.auth.entity.Purchase">
+  	UPDATE buy_list SET buy_num=#{buyNum} ,fact_buy_num=#{factBuyNum} WHERE buy_id=#{buyId}
+  </update>
+  </mapper>

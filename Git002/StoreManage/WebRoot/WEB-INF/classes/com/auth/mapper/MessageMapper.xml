@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.auth.mapper.MessageMapper">
+	<resultMap id="Message" type="com.auth.entity.Message">
+        <id property="msgId" column="msg_id"/>
+        <result property="msgTitle" column="msg_title"/>
+        <result property="msgContext" column="msg_context"/>
+        <result property="createTime" column="create_time"/>
+        
+        <result property="userMsgId" column="user_msg_id"/>
+        <result property="fromUser" column="from_user"/>
+        <result property="state" column="state"/>
+        <result property="toUser" column="to_user"/>
+        <result property="userName" column="user_name"/>
+    </resultMap>
+    
+    
+<!-- 新增加站内信 -->
+	<insert id="addMessage" parameterType="Message" >
+		INSERT INTO message (msg_title,msg_context,create_time) VALUES(#{msgTitle},#{msgContext},NOW())
+	</insert>
+	
+<!-- 查询站内信 -->
+	<select id="selectMessage" parameterType="java.util.HashMap" resultMap="Message">
+		select * from message
+		<where>
+			<if test="message.msgTitle != null and message.msgTitle != ''">
+			AND msg_title LIKE CONCAT ('%',#{message.msgTitle},'%')
+			</if>
+			<if test="message.createTime != null and message.createTime != ''">
+			AND create_time LIKE CONCAT('%',#{message.createTime},'%') 
+			</if> 
+		</where>
+			LIMIT #{page.pageIndex},#{page.pageNum}
+	</select>
+	
+<!-- 查询站内信条数 -->
+	<select id="selectMessageCount" parameterType="java.util.HashMap" resultType="Integer">
+		select count(*) from message
+		<where>
+			<if test="message.msgTitle != null and message.msgTitle != ''">
+			AND msg_title LIKE CONCAT ('%',#{message.msgTitle},'%')
+			</if>
+			<if test="message.createTime != null and message.createTime != ''">
+			AND create_time LIKE CONCAT('%',#{message.createTime},'%') 
+			</if>
+		</where>
+	</select>
+	
+	
+<!-- 查询站内信表最大的主键id，就是关联表的站内信id -->
+	<select id="selectMaxId" resultType="Integer">
+		SELECT MAX(msg_id) FROM message	
+	</select>
+	
+<!-- 给关联表添加数据 -->
+	<insert id="insertUserMessage" parameterType="java.util.HashMap">
+		INSERT INTO user_message (msg_id,user_id,from_user,to_user) 
+			VALUES(#{msgId},#{userId},#{fromUser},#{toUser})
+	</insert>
+	
+	
+	
+	
+	
+<!-- 查询站内信关联表信息 -->
+	<select id="selectUserMessage" parameterType="java.util.HashMap" resultMap="Message">
+		SELECT `user_message`.`user_msg_id`,`message`.`msg_title`,`message`.`msg_context`,`user_message`.`from_user`,
+		`user_message`.`state`,`message`.`create_time`,`user_info`.user_name,`user_info`.user_id FROM `message`,`user_message`,`user_info`
+		where  `user_message`.`to_user`=#{userId} AND `user_message`.`msg_id`=`message`.`msg_id`
+		AND `user_info`.user_id=`user_message`.from_user
+			<if test="message.msgTitle != null and message.msgTitle != ''">
+				AND msg_title LIKE CONCAT ('%',#{message.msgTitle},'%')
+			</if>
+			<if test="message.state != null and message.state !=''">
+				AND state=#{message.state}
+			</if>
+			<if test="message.userName !=null and message.userName !=''">
+				AND user_name LIKE CONCAT ('%',#{message.userName},'%')
+			</if>
+			<if test="message.createTime != null and message.createTime != ''">
+				AND `message`.create_time LIKE CONCAT('%',#{message.createTime},'%') 
+			</if>
+				ORDER BY `user_message`.`state`,`message`.create_time DESC
+				LIMIT #{page.pageIndex},#{page.pageNum}
+</select>
+
+
+<!-- 查询我的站内信条数 -->
+	<select id="selectMyCount" parameterType="java.util.HashMap" resultType="Integer">
+		SELECT count(*) FROM `message`,`user_message`,`user_info`
+			where  `user_message`.`to_user`=#{userId} AND `user_message`.`msg_id`=`message`.`msg_id`
+			AND `user_info`.user_id=`user_message`.from_user
+			<if test="message.msgTitle != null and message.msgTitle != ''">
+				AND msg_title LIKE CONCAT ('%',#{message.msgTitle},'%')
+			</if>
+			<if test="message.state != null and message.state !=''">
+				AND state=#{message.state}
+			</if>
+			<if test="message.userName !=null and message.userName !=''">
+				AND user_name LIKE CONCAT ('%',#{message.userName},'%')
+			</if>
+			<if test="message.createTime != null and message.createTime != ''">
+				AND `message`.create_time LIKE CONCAT('%',#{message.createTime},'%') 
+			</if>
+	</select>
+	
+<!-- 修改我的站内信状态 -->
+	<update id="updateState" parameterType="Message">
+		UPDATE `user_message` SET `user_message`.`state`=1 WHERE `user_message`.`user_msg_id`=#{userMsgId}
+	</update>
+	
+	
+<!-- 查询我的未读站内信条数-->
+	<select id="selectMyMessageCount" parameterType="Integer" resultType="Integer">
+		SELECT COUNT(*) FROM user_message WHERE state=0 AND to_user=#{toUser}
+	</select> 
+	
+	
+<!-- 根据user_message中的form_user查询用户表的name,显示发信人 -->
+	<select id="selectuserNameByfromUser" parameterType="java.util.HashMap" resultMap="Message">
+		SELECT DISTINCT `user_info`.user_name,`user_info`.user_id FROM `user_info`,`user_message`
+			WHERE `user_message`.from_user=`user_info`.user_id 
+				AND `user_message`.to_user=#{toUser}
+				LIMIT #{page.pageIndex},#{page.pageNum} 
+				
+	
+	</select>
+</mapper> 

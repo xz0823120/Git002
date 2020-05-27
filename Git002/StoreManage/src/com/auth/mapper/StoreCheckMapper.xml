@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.auth.mapper.StoreCheckMapper">
+	<resultMap type="com.auth.entity.StoreCheck" id="StoreCheck">
+		<id property="checkId" column="check_id" />
+		<result property="storeId" column="store_id" />
+		<result property="recordId" column="record_id" />
+		<result property="productId" column="product_id" />
+		<result property="batchId" column="batch_id" />
+		<result property="checkNum" column="check_num" />
+		<result property="checkTime" column="check_time" />
+		<result property="checkUser" column="check_user" />
+		<result property="lossNum" column="loss_num" />
+		<result property="reson" column="reson" />
+		<result property="checkState" column="checkState" />
+		<result property="batchNum" column="batchNum" />
+		<result property="productName" column="productName" />
+		<result property="storeName" column="storeName" />
+	</resultMap>
+	<!--四表联查，storeCheck（check）仓库Id，时间（一个是自己的Javabean中的，另一个是单独查过来的）checkRecord时间，根据盘点批次
+	（check）商品名称，（record）状态  hsahMap(storeCheck（对象），checkTimeTo（时间字段），checkState（状态字段），productName(商品名称字段))-->
+	
+	<select id="findStoreCheck" parameterType="java.util.HashMap" resultMap="StoreCheck">
+		SELECT store.* FROM 
+		`store_check` AS store,
+		`check_record` AS record,
+		`check_batch` AS batch, 
+		`product` AS products
+			where
+			store.`record_id` = record.`record_id` 
+			and store.`batch_id` = batch.`batch_id`
+			and store.`product_id` = products.`product_id`
+		<!-- 按照仓库ID查 -->
+			<if test="storeCheck.storeId != null and storeCheck.storeId != ''">
+				and store.`store_id` = #{storeCheck.storeId}	
+			</if>
+			<!-- 按照时间段查询 -->
+			<if test="timeToBegin !=null and timeToBegin !='' and timeToEnd != '' and timeToEnd !=null">
+				AND UNIX_TIMESTAMP(store.`check_time`) &gt; UNIX_TIMESTAMP(#{timeToBegin}) 
+				AND UNIX_TIMESTAMP(store.`check_time`) &lt; UNIX_TIMESTAMP(#{timeToEnd})	
+			</if>
+			<!-- 按照状态查询 -->
+			<if test="checkState != null and checkState != ''">
+				and record.`check_state` = #{checkState}	
+			</if>
+			<if test="productName!= null and productName!= ''">
+				and products.`product_name` LIKE CONCAT('%', #{productName},'%')
+			</if>
+		
+		LIMIT #{page.pageIndex},#{page.pageNum}
+	</select>
+	<!-- 上面复制，专门统计数目 -->
+	<select id="findStoreCheckNum" parameterType="java.util.HashMap" resultType="int">
+		SELECT COUNT(*) FROM 
+		`store_check` AS store,
+		`check_record` AS record,
+		`check_batch` AS batch, 
+		`product` AS products
+			where store.`record_id` = record.`record_id` 
+			and store.`batch_id` = batch.`batch_id`
+			and store.`product_id` = products.`product_id`
+		<!-- 按照仓库ID查 -->
+			<if test="storeCheck.storeId != null and storeCheck.storeId != ''">
+				and store.`store_id` = #{storeCheck.storeId}	
+			</if>
+			<!-- 按照时间段查询 -->
+			<if test="storeCheck.checkTime != null and storeCheck.checkTime != ''">
+				and store.`check_time` &gt; UNIX_TIMESTAMP(#{storeCheck.checkTime}) 
+				AND store.`check_time` &lt; UNIX_TIMESTAMP(#{checkTimeTo})	
+			</if>
+			<!-- 按照状态查询 -->
+			<if test="checkState != null and checkState != ''">
+				and record.`check_state` = #{checkState}	
+			</if>
+			<if test="productName!= null and productName!= ''">
+				and products.`product_name` LIKE CONCAT('%', #{productName},'%')
+			</if>
+	</select>
+	<select id="findBatchNumByBatchId" parameterType="java.lang.Integer" resultType="java.lang.String">
+			SELECT `batch_num` as batchNum FROM `check_batch`  WHERE `batch_id`=#{i}
+	</select>
+	
+	<select id="findCheckStateByRecordId" parameterType="java.lang.Integer" resultType="java.lang.String">
+			SELECT `check_state` AS checkState FROM `check_record`  WHERE `record_id`=#{i}
+	</select>
+	<select id="findStoreNameByStoreId" parameterType="java.lang.Integer" resultType="java.lang.String">
+			SELECT `store_name` as storeName FROM `store`  WHERE `store_id` = #{i}
+	</select>
+	<select id="findProductNameByProductId" parameterType="java.lang.Integer" resultType="java.lang.String">
+			SELECT `product_name` as productName FROM `product`  WHERE `product_id`= #{i}
+	</select>
+	<update id="updateStocktakingState" parameterType="java.util.HashMap">
+			UPDATE `check_record` record INNER JOIN `store_check` store 
+			ON record.`record_id` = store.`record_id`
+			<set>
+			<if test="lossNum!=null and lossNum != ''">
+			 store.`loss_num`= #{lossNum},
+			</if>
+			<if test="checkNum !=null and checkNum != ''">
+			store.`check_num` = #{checkNum},
+			</if>
+			<if test="reson !=null and reson != ''">
+			store.`reson` = #{reson}
+			</if>
+			</set>
+ 			WHERE  record.`record_id`= #{recordId}  AND record.`check_state` = '0'
+	</update>
+	<update id="updateStocktakingText" parameterType="java.util.HashMap">
+			UPDATE `check_record` record INNER JOIN `store_check` store 
+			ON record.`record_id` = store.`record_id`
+			set record.`check_state` = '1'
+			WHERE  record.`record_id`= #{recordId}
+    </update>
+	<insert id = "insertBatch" parameterType="java.util.HashMap">
+			INSERT INTO `check_batch` (`batch_num`,`store_id`,`create_time`,`create_user`) 
+			VALUES(DATE_FORMAT(NOW(),'%Y%m%d%H%i'),#{storeId},NOW(),#{createUser})
+			
+	</insert>
+	<select id = "findBatchId" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+			SELECT `check_batch`.`batch_id` FROM `check_batch` WHERE `batch_num` =  
+			#{batchNum}
+	</select>
+	<insert id = "insertRecord" parameterType="java.util.HashMap">
+			INSERT INTO`check_record` (`product_id`,`store_id`,`batch_id`) 
+			VALUES (#{productId},#{storeId},#{batchId})
+	</insert>
+	<select id = "findRecordId" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+			SELECT `check_record`.`record_id` FROM `check_record` WHERE `batch_id` = #{batchId}
+	</select>
+	<insert id = "insertStoreCheck" parameterType="java.util.HashMap">
+			insert into `store_check` (`store_id`,`record_id`,`product_id`,`batch_id`,`check_num`,
+			`check_time`,`check_user`,`loss_num`,`reson`)
+			values(#{storeId},#{recordId},#{productId},#{batchId},
+			#{checkNum},now(),#{checkUser},#{lossName},#{reson})
+	</insert>
+</mapper>

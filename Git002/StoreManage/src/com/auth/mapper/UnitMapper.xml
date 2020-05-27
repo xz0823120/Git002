@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.auth.mapper.UnitMapper">
+	<resultMap type="com.auth.entity.Unit" id="Unit">
+		<id column="unit_id" property="unitId"/>
+		<result column="unit_name" property="unitName"/>
+		<result column="unit_desc" property="unitDesc"/>
+	</resultMap>
+	<select id="selectUnitList" resultMap="Unit">
+		SELECT * FROM `unit`	
+	</select>
+</mapper>

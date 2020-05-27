@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.auth.mapper.OutStoreMapper">
+	<resultMap type="com.auth.entity.OutStoreInfo" id="OutStoreInfoResult">
+		<id property="outsId" column="outs_id" />
+		<result property="productId" column="product_id" />
+		<result property="storeId" column="store_id" />
+		<result property="userId" column="user_id" />
+		<result property="outPrice" column="out_price" />
+		<result property="outNum" column="out_num" />
+		<result property="createBy" column="create_by" />
+		<result property="createTime" column="create_time" />
+		<result property="isOut" column="is_out" />
+		<result property="getCode" column="getCode" />
+		<result property="getStoreName" column="getStoreName" />
+		<result property="getProductName" column="getProductName" />
+		<result property="dateStateTime" column="dateStateTime" />
+		<result property="dateEndTime" column="dateEndTime" />
+		<result property="productInvent" column="product_invent" />
+	</resultMap>
+	<!-- 查询入库单个数 &gt; >  &lt < -->
+	<select id="selectCount" parameterType="java.util.HashMap"
+		resultType="int">
+		select COUNT(0) 
+		 from `out_store` as outStore , product as pro
+		 where outStore.product_id=pro.product_id
+			<if test="outStoreInfo.dateStateTime!=null and outStoreInfo.dateStateTime!=''">
+				and	 outStore.create_time &gt;=#{outStoreInfo.dateStateTime} 
+			</if>
+			<if  test="outStoreInfo.dateEndTime!=null and outStoreInfo.dateEndTime!=''">
+				 and (outStore.create_time &lt;=#{outStoreInfo.dateEndTime} OR outStore.create_time LIKE CONCAT(#{outStoreInfo.dateEndTime},'%'))
+			</if>
+			<if test="outStoreInfo.getProductName!=null and outStoreInfo.getProductName!=''"> 
+				and pro.product_name LIKE CONCAT('%', #{outStoreInfo.getProductName},'%')
+			</if>
+			<if test="outStoreInfo.isOut!=null and outStoreInfo.isOut!=''">
+				and outStore.`is_out` = #{outStoreInfo.isOut}
+			</if>
+			<if test="outStoreInfo.storeId!=null and outStoreInfo.storeId!=''">
+				and outStore.`store_id` = #{outStoreInfo.storeId}
+			</if>
+	</select>
+	<!-- 分页查询 -->
+	<select id="selectOutStorePage" parameterType="java.util.HashMap"
+		resultMap="OutStoreInfoResult">
+		select outStore.outs_id,outStore.product_id,GET_PRODTCT_NAME(outStore.product_id) AS getProductName,outStore.store_id,GET_STORE_NAME(outStore.store_id) AS getStoreName,outStore.user_id,
+			GET_USER_CODE(outStore.user_id) as getCode,outStore.out_price,outStore.out_num,
+				outStore.create_by,outStore.create_time,outStore.is_out
+		 from `out_store` as outStore , product as pro
+		 where outStore.product_id=pro.product_id
+			<if test="outStoreInfo.dateStateTime!=null and outStoreInfo.dateStateTime!=''">
+				and	 outStore.create_time &gt;=#{outStoreInfo.dateStateTime} 
+			</if>
+			<if  test="outStoreInfo.dateEndTime!=null and outStoreInfo.dateEndTime!=''">
+				 and (outStore.create_time &lt;=#{outStoreInfo.dateEndTime} OR outStore.create_time LIKE CONCAT(#{outStoreInfo.dateEndTime},'%'))
+			</if>
+			<if test="outStoreInfo.getProductName!=null and outStoreInfo.getProductName!=''"> 
+				and pro.product_name LIKE CONCAT('%', #{outStoreInfo.getProductName},'%')
+			</if>
+			<if test="outStoreInfo.isOut!=null and outStoreInfo.isOut!=''">
+				and outStore.`is_out` = #{outStoreInfo.isOut}
+			</if>
+			<if test="outStoreInfo.storeId!=null and outStoreInfo.storeId!=''">
+				and outStore.`store_id` = #{outStoreInfo.storeId}
+			</if>
+		order by outStore.create_time DESC
+		LIMIT #{Page.pageIndex},#{Page.pageNum}
+	</select>
+	<!-- 根据出库单ID修改出库状态 -->
+	<update id="updateOutStore" parameterType="com.auth.entity.OutStoreInfo">
+		UPDATE `out_store` SET is_out= 1 where outs_id=#{outsId}
+	</update>
+	<!-- 根据商品ID和仓库ID更新商品数量 -->
+	<update id="updateStoreNum" parameterType="com.auth.entity.OutStoreInfo">
+		UPDATE `product` SET product_invent=product_invent-#{outNum} where product_id=#{productId} AND store_id=#{storeId}
+	</update>
+	<!-- 根据商品ID和仓库ID查找商品数量 -->
+	<select id="findProductNum" parameterType="java.lang.String"  resultMap="OutStoreInfoResult">
+		SELECT * FROM `product`
+			where product_id=#{productId} AND store_id=#{storeId}
+	</select>
+</mapper>

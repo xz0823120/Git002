@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.auth.mapper.BrandMapper">
+	<resultMap id="Brand" type="com.auth.entity.Brand">
+        <id property="brandId" column="brand_id"/>
+        <result property="brandName" column="brand_name"/>
+        <result property="brandLeter" column="brand_leter"/>
+        <result property="brandDesc" column="brand_desc"/>
+    </resultMap>
+
+	
+<!-- 增加新品牌 -->
+	<insert id="addBrand" parameterType="Brand" >
+		INSERT INTO brand (brand_name,brand_leter,brand_desc) VALUES(#{brandName},#{brandLeter},#{brandDesc})
+	</insert>
+	
+<!-- 查询所有品牌,分页查询 -->
+	<select id="selectBrand" parameterType="java.util.HashMap" resultMap="Brand">
+		SELECT * FROM brand
+		<where>
+			<if test="brand.brandLeter != null and brand.brandLeter !=''">
+			AND brand_leter=#{brand.brandLeter}
+			</if>
+			<if test="brand.brandName != null and brand.brandName !=''">
+			AND brand_name LIKE CONCAT ('%',#{brand.brandName},'%')
+			</if>
+		</where>
+		LIMIT #{page.pageIndex},#{page.pageNum}
+	</select>
+	
+	<select id="selectAllBrand" resultMap="Brand">
+		SELECT * FROM brand
+	</select>
+<!-- 查询总条数，条件搜索--> 			
+	<select id="selectCount" parameterType="java.util.HashMap" resultType="Integer">
+		SELECT COUNT(*) FROM brand
+		<where>
+			<if test="brand.brandLeter != null and brand.brandLeter !=''">
+			AND brand_leter=#{brand.brandLeter}
+			</if>
+			<if test="brand.brandName != null and brand.brandName !=''">
+			AND brand_name LIKE CONCAT ('%',#{brand.brandName},'%')
+			</if>
+		</where>
+	</select>
+	
+<!-- 验证品牌名的唯一性，根据输入的品牌名进行查询 -->
+	<select id="selectBrandByName" parameterType="Brand" resultType="Brand">
+		SELECT * FROM brand WHERE brand_name=#{brandName}
+	</select>
+	
+<!-- 删除品牌 -->
+	<delete id="deleteBrand" parameterType="Brand">
+		DELETE FROM brand WHERE brand_id=#{brandId}
+	</delete>
+	
+<!-- 修改品牌信息
+	<update id="updataBrand" parameterType="Brand">
+		UPDATE brand SET brand_name=#{brandName},brand_desc=#{brandDesc} WHERE brand_id=#{brandId}
+	</update> -->
+</mapper>

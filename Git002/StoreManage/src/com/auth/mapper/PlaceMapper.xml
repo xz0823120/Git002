@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.auth.mapper.PlaceMapper">
+	<resultMap type="com.auth.entity.Place" id="resultPlace">
+		<id property="placeId" column="place_id"/>
+		<result property="placeName" column="place_name"/>
+		<result property="placeNum" column="place_num"/>
+		<result property="introduce" column="introduce"/>
+		<result property="isDelete" column="is_delete"/>
+	</resultMap>
+	<!-- 全查 -->
+	<select id="findAll" resultMap="resultPlace">
+		select * from place
+	</select>
+	<select id="findPlaceByNum" parameterType="string" resultMap="resultPlace">
+		select * from place where place_num=#{placeNum}
+	</select>
+	<!-- 查个数 -->
+	<select id="countPlace" parameterType="hashmap" resultType="int">
+		select COUNT(0) from place where is_delete= '0'
+				<if test="place.placeName!=null and place.placeName!=''">
+					and place_name LIKE CONCAT('%', #{place.placeName},'%')
+				</if>
+				<if test="place.placeNum!=null and place.placeNum!=''">
+					and place_num LIKE CONCAT('%', #{place.placeNum},'%')
+				</if>		
+	</select>
+	<!-- 分页 -->
+	<select id="selectPage" parameterType="hashmap" resultMap="resultPlace">
+		select place_id,place_name,place_num,introduce from place 
+			where is_delete= '0'
+				<if test="place.placeName!=null and place.placeName!=''">
+					and place_name LIKE CONCAT('%', #{place.placeName},'%')
+				</if>
+				<if test="place.placeNum!=null and place.placeNum!=''">
+					and place_num LIKE CONCAT('%', #{place.placeNum},'%')
+				</if>
+			LIMIT #{Page.pageIndex},#{Page.pageNum}
+	</select>
+	<!-- 添加产地 -->
+	<insert id="addPlace" parameterType="com.auth.entity.Place">
+		insert into place (place_name,place_num,introduce) 
+			values(#{placeName},#{placeNum},#{introduce})
+	</insert>
+	<!-- 修改信息 -->
+	<update id="updatePlace" parameterType="com.auth.entity.Place">
+		update place set place_name=#{placeName},introduce=#{introduce} 
+			where place_id=#{placeId}
+	</update>
+	<!-- 删除信息 -->
+	<update id="deletePlace" parameterType="Integer">
+		update place set is_delete='1'
+			where place_id=#{placeId}
+	</update>
+</mapper>

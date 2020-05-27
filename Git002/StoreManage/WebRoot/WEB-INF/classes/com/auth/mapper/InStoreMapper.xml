@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.auth.mapper.InStoreMapper">
+	<resultMap type="com.auth.entity.InStoreInfo" id="inStoreInfoResult">
+		<id property="insId" column="ins_id" />
+		<result property="storeId" column="store_id" />
+		<result property="productId" column="product_id" />
+		<result property="inPrice" column="in_price" />
+		<result property="inNum" column="in_num" />
+		<result property="createBy" column="create_by" />
+		<result property="createTime" column="create_time" />
+		<result property="isIn" column="is_in" />
+		<result property="getCode" column="getCode" />
+		<result property="getStoreName" column="getStoreName" />
+		<result property="getProductName" column="getProductName" />
+		<result property="createId1" column="createId1" />
+	</resultMap>
+	<!-- 查询入库单个数 -->
+	<select id="selectCount" parameterType="java.util.HashMap"
+		resultType="int">
+		select COUNT(0) from `in_store` as inStore,product as pro
+		 where pro.product_id=inStore.product_id
+		 	<if test="inStoreInfo.isIn!=null and inStoreInfo.isIn!=''">
+		 		and inStore.`is_in` = #{inStoreInfo.isIn} 
+		 	</if>
+			<if test="inStoreInfo.dateStateTime!=null and inStoreInfo.dateStateTime!=''">
+				and	inStore.create_time &gt;=#{inStoreInfo.dateStateTime}
+			</if>
+			<if test="inStoreInfo.dateEndTime!=null and inStoreInfo.dateEndTime!=''">
+				and (inStore.create_time &lt;=#{inStoreInfo.dateEndTime} OR inStore.create_time LIKE CONCAT(#{inStoreInfo.dateEndTime},'%'))
+			</if>
+			<if test="inStoreInfo.getProductName!=null and inStoreInfo.getProductName!=''"> 
+				and pro.product_name LIKE CONCAT('%', #{inStoreInfo.getProductName},'%') 
+			</if>
+			
+			<if test="inStoreInfo.storeId!=null and inStoreInfo.storeId!=''">
+				and inStore.`store_id` = #{inStoreInfo.storeId}
+			</if>
+	</select>
+	<!-- 分页查询 -->
+	<select id="selectInStorePage" parameterType="java.util.HashMap"
+		resultMap="inStoreInfoResult">
+		select inStore.ins_id,inStore.store_id,GET_STORE_NAME(inStore.store_id) AS getStoreName,inStore.product_id, pro.product_name AS getProductName,inStore.in_price,inStore.in_num,
+				inStore.create_by,GET_USER_CODE(inStore.create_by) as getCode,inStore.create_time,inStore.is_in
+		 from `in_store` as inStore,product as pro
+		 where pro.product_id=inStore.product_id
+		 	<if test="inStoreInfo.isIn!=null and inStoreInfo.isIn!=''">
+		 		and inStore.`is_in` = #{inStoreInfo.isIn} 
+		 	</if>
+			<if test="inStoreInfo.dateStateTime!=null and inStoreInfo.dateStateTime!=''">
+				and	inStore.create_time &gt;=#{inStoreInfo.dateStateTime}
+			</if>
+			<if test="inStoreInfo.dateEndTime!=null and inStoreInfo.dateEndTime!=''">
+				and (inStore.create_time &lt;=#{inStoreInfo.dateEndTime} OR inStore.create_time LIKE CONCAT(#{inStoreInfo.dateEndTime},'%'))
+			</if>
+			<if test="inStoreInfo.getProductName!=null and inStoreInfo.getProductName!=''"> 
+				and pro.product_name LIKE CONCAT('%', #{inStoreInfo.getProductName},'%') 
+			</if>
+			
+			<if test="inStoreInfo.storeId!=null and inStoreInfo.storeId!=''">
+				and inStore.`store_id` = #{inStoreInfo.storeId}
+			</if>
+		order by inStore.create_time DESC
+		LIMIT #{Page.pageIndex},#{Page.pageNum}
+	</select>
+	<!-- 根据入库单ID修改入库状态 -->
+	<update id="updateInsIdStore" parameterType="com.auth.entity.InStoreInfo">
+		UPDATE `in_store` SET is_in= 1 where ins_id=#{insId}
+	</update>
+	<!-- 根据商品ID和仓库ID更新商品数量 -->
+	<update id="updateStoreNum" parameterType="com.auth.entity.InStoreInfo">
+		UPDATE `product` SET product_invent=product_invent+#{inNum} where product_id=#{productId} AND store_id=#{storeId}
+	</update>
+	<!-- 添加入库单 -->
+	<insert id="addInStoreFrom" parameterType="com.auth.entity.Purchase">
+		INSERT INTO `in_store`
+		(store_id,product_id,in_num,create_by,create_time,is_in)
+		VALUES(#{storeId},#{productId},#{inNum},#{createBy},NOW(),0)
+	</insert>
+	<!-- 添加	入库单已审核 -->
+	<insert id="addInStoreFrom1" parameterType="com.auth.entity.Purchase">
+		INSERT INTO `in_store`
+		(store_id,product_id,in_num,create_by,create_time,is_in)
+		VALUES(#{storeId},#{productId},#{inNum},#{createBy},NOW(),1)
+	</insert>
+</mapper>

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.auth.mapper.StoreMapper">
+	<resultMap type="com.auth.entity.Store" id="storeResult">
+		<id property="storeId" column="store_id" />
+		<result property="storeName" column="store_name" />
+		<result property="storeNum" column="store_num" />
+		<result property="storeAddress" column="store_address" />
+		<result property="concat" column="concat" />
+		<result property="phone" column="phone" />
+	</resultMap>
+	
+	<!-- 查询所有仓库信息，可模糊匹配仓库名、地址、联系人、联系电话 -->
+	<select id="selectStore" parameterType="java.util.HashMap"
+		resultMap="storeResult">
+		SELECT *
+		 FROM store
+		<where>
+			<if test="store.storeName!=null and store.storeName!=''">
+				AND store_name LIKE CONCAT('%', #{store.storeName},'%')
+			</if>
+			<if test="store.storeAddress!=null and store.storeAddress!=''">
+				AND store_address LIKE CONCAT('%', #{store.storeAddress},'%')
+			</if>
+			<if test="store.concat!=null and store.concat!=''">
+				AND concat LIKE CONCAT('%', #{store.concat},'%')
+			</if>
+			<if test="store.phone!=null and store.phone!=''">
+				AND phone LIKE CONCAT('%', #{store.phone},'%')
+			</if>
+		</where>
+		LIMIT #{page.pageIndex},#{page.pageNum}
+	</select>
+	
+	<!-- 查询仓库总数 -->
+	<select id="storeCount" parameterType="java.util.HashMap"
+		resultType="int">
+		SELECT COUNT(0) FROM store
+		<where>
+			<if test="store.storeName!=null and store.storeName!=''">
+				AND store_name LIKE CONCAT('%', #{store.storeName},'%')
+			</if>
+			<if test="store.storeAddress!=null and store.storeAddress!=''">
+				AND store_address LIKE CONCAT('%', #{store.storeAddress},'%')
+			</if>
+			<if test="store.concat!=null and store.concat!=''">
+				AND concat LIKE CONCAT('%', #{store.concat},'%')
+			</if>
+			<if test="store.phone!=null and store.phone!=''">
+				AND phone LIKE CONCAT('%', #{store.phone},'%')
+			</if>
+		</where>
+	</select>
+	
+	<!--根据仓库编码仓库信息：添加验证 -->
+	<select id="findInfoByNum" parameterType="com.auth.entity.Store" resultType="int">
+		SELECT COUNT(0) FROM store WHERE store_num = #{storeNum}
+	</select>
+	<!-- 添加仓库 -->
+	<insert id="insertStore" parameterType="com.auth.entity.Store">
+		INSERT INTO store
+		(store_name,store_num,store_address,concat,phone)
+		VALUES (#{storeName},#{storeNum},#{storeAddress},#{concat},#{phone})
+	</insert>
+	
+	<!-- 根据仓库id修改仓库信息 -->
+	<update id="updateStore" parameterType="com.auth.entity.Store">
+		UPDATE store SET
+		store_name=#{storeName},store_address=#{storeAddress},concat=#{concat},phone=#{phone}
+		WHERE store_id = #{storeId}
+	</update>
+	
+	<!-- 根据仓库id回显仓库信息 -->
+	<select id="returnStore" parameterType="com.auth.entity.Store" resultMap="storeResult">
+		select * from store WHERE store_id = #{storeId}
+	</select>
+	<!-- 查询仓库列表：调货选择仓库 -->
+	<select id="chooseStore"  resultMap="storeResult">
+		SELECT * FROM store  
+	</select>
+</mapper> 

@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.auth.mapper.ProductMapper" >
+  <resultMap id="Product" type="com.auth.entity.Product" >
+    <id column="product_id" property="productId" jdbcType="INTEGER" />
+    <result column="store_id" property="storeId" jdbcType="INTEGER" />
+    <result column="brand_id" property="brandId" jdbcType="INTEGER" />
+    <result column="product_name" property="productName" jdbcType="VARCHAR" />
+    <result column="product_num" property="productNum" jdbcType="VARCHAR" />
+    <result column="product_invent" property="productInvent" jdbcType="DECIMAL" />
+    <result column="type_id" property="typeId" jdbcType="INTEGER" />
+    <result column="supply_id" property="supplyId" jdbcType="INTEGER" />
+    <result column="place_id" property="placeId" jdbcType="INTEGER" />
+    <result column="unit_id" property="unitId" jdbcType="INTEGER" />
+    <result column="up_down_state" property="upDownState" jdbcType="CHAR" />
+    <result column="in_price" property="inPrice" jdbcType="DECIMAL" />
+    <result column="sale_price" property="salePrice" jdbcType="DECIMAL" />
+    <result column="mem_price" property="memPrice" jdbcType="DECIMAL" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+    <result column="update_time" property="updateTime" jdbcType="TIMESTAMP" />
+    <result column="create_by" property="createBy" jdbcType="INTEGER" />
+    <result column="update_by" property="updateBy" jdbcType="INTEGER" />
+    <result column="imgs" property="imgs" jdbcType="VARCHAR" />
+    <result column="product_date" property="productDate" jdbcType="TIMESTAMP" />
+    <result column="supp_date" property="suppDate" jdbcType="TIMESTAMP" />
+ 	<result column="out_num" property="outNum"  />
+    <result column="user_id" property="userId"  />
+  </resultMap>
+
+	<!-- 查询商品信息 -->
+	<!-- hashmap存的是Product对象    “pro” -->
+	<select id="selectProductMess" parameterType="hashmap" resultMap="Product">
+		SELECT *,`GET_STORE_NAME`(`store_id`) AS storeName,
+			`GET_BRAND_NAME`(`brand_id`) AS brandName,
+			`GET_RPODUCT_TYPE_NAME`(`type_id`) AS typeName,
+			`GET_SUPPLY_NAME`(`supply_id`) AS supplyName,
+			`GET_PLACE_NAME`(`place_id`) AS placeName,
+			`GET_UNIT_NAME`(`unit_id`) AS unitName FROM `product`
+		WHERE `store_id`=#{pro.storeId}
+		<if test="pro.productName!=null and pro.productName!=''">
+			and `product_name` LIKE CONCAT('%',#{pro.productName},'%')
+		</if>
+		<if test="pro.brandName!=null and pro.brandName!=''">
+			and `GET_BRAND_NAME`(`brand_id`) LIKE CONCAT('%',#{pro.brandName},'%')
+		</if>
+		<if test="pro.typeName!=null and pro.typeName!=''">
+			and `GET_RPODUCT_TYPE_NAME`(`type_id`) LIKE CONCAT('%',#{pro.typeName},'%')
+		</if>
+		<if test="pro.supplyName!=null and pro.supplyName!=''">
+			and `GET_SUPPLY_NAME`(`supply_id`) LIKE CONCAT('%',#{pro.supplyName},'%')
+		</if>
+		<if test="pro.placeName!=null and pro.placeName!=''">
+			and `GET_PLACE_NAME`(`place_id`) LIKE CONCAT('%',#{pro.placeName},'%')
+		</if>
+		<if test="pro.upDownState!=null and pro.upDownState!=''">
+			and `up_down_state` = #{pro.upDownState}
+		</if>
+		<if test="pro.isOverDate!=null and pro.isOverDate!='' and pro.isOverDate==1">
+			and DATE_FORMAT(NOW(),'%y-%m-%d') &lt; `supp_date`
+		</if>
+		<if test="pro.isOverDate!=null and pro.isOverDate!='' and pro.isOverDate==0">
+			and DATE_FORMAT(NOW(),'%y-%m-%d') &gt; `supp_date`
+		</if>
+		ORDER BY `create_time` DESC
+		LIMIT #{Page.pageIndex},#{Page.pageNum}
+	</select>
+	
+	
+	<select id="selectCount" parameterType="hashmap" resultType="java.lang.Integer">
+		SELECT COUNT(*) FROM `product`
+		WHERE `store_id`=#{pro.storeId}
+		<if test="pro.productName!=null and pro.productName!=''">
+			and `product_name` LIKE CONCAT('%',#{pro.productName},'%')
+		</if>
+		<if test="pro.brandName!=null and pro.brandName!=''">
+			and `GET_BRAND_NAME`(`brand_id`) LIKE CONCAT('%',#{pro.brandName},'%')
+		</if>
+		<if test="pro.typeName!=null and pro.typeName!=''">
+			and `GET_RPODUCT_TYPE_NAME`(`type_id`) LIKE CONCAT('%',#{pro.typeName},'%')
+		</if>
+		<if test="pro.supplyName!=null and pro.supplyName!=''">
+			and `GET_SUPPLY_NAME`(`supply_id`) LIKE CONCAT('%',#{pro.supplyName},'%')
+		</if>
+		<if test="pro.placeName!=null and pro.placeName!=''">
+			and `GET_PLACE_NAME`(`place_id`) LIKE CONCAT('%',#{pro.placeName},'%')
+		</if>
+		<if test="pro.upDownState!=null and pro.upDownState!=''">
+			and `up_down_state` = #{pro.upDownState}
+		</if>
+		<if test="pro.isOverDate!=null and pro.isOverDate!='' and pro.isOverDate==1">
+			and DATE_FORMAT(NOW(),'%y-%m-%d') &lt; `supp_date`
+		</if>
+		<if test="pro.isOverDate!=null and pro.isOverDate!='' and pro.isOverDate==0">
+			and DATE_FORMAT(NOW(),'%y-%m-%d') &gt; `supp_date`
+		</if>
+	</select>
+	
+	<!-- 修改商品信息 -->
+	<update id="modificationProduct" parameterType="hashmap">
+		UPDATE `product` SET 
+		<if test="product.storeId!=null and product.storeId!=''">
+			`store_id`=#{product.storeId},
+		</if>
+		<if test="product.brandId!=null and product.brandId!=''">
+			`brand_id`=#{product.brandId},
+		</if>
+		<if test="product.productName!=null and product.productName!=''">
+			`product_name`=#{product.productName},
+		</if>
+		<if test="product.productNum!=null and product.productNum!=''">
+			`product_num`=#{product.productNum},
+		</if>
+		<if test="product.productInvent!=null and product.productInvent!=''">
+			`product_invent`=#{product.productInvent},
+		</if>
+		<if test="product.typeId!=null and product.typeId!=''">
+			`type_id`=#{product.typeId},
+		</if>
+		<if test="product.supplyId!=null and product.supplyId!=''">
+			`supply_id`=#{product.supplyId},
+		</if>
+		<if test="product.placeId!=null and product.placeId!=''">
+			`place_id`=#{product.placeId},
+		</if>
+		<if test="product.unitId!=null and product.unitId!=''">
+			`unit_id`=#{product.unitId},
+		</if>
+		<if test="product.introduce!=null and product.introduce!=''">
+			`introduce`=#{product.introduce},
+		</if>
+		<if test="product.inPrice!=null and product.inPrice!=''">
+			`in_price`=#{product.inPrice},
+		</if>
+		<if test="product.salePrice!=null and product.salePrice!=''">
+			`sale_price`=#{product.salePrice},
+		</if>
+		<if test="product.memPrice!=null and product.memPrice!=''">
+			`mem_price`=#{product.memPrice},
+		</if>
+		
+			`update_time`=now(),
+			
+		<if test="product.imgs!=null and product.imgs!=''">
+			`imgs`=#{product.imgs}
+		</if>
+		<if test="product.productDate!=null and product.productDate!=''">
+			`product_date`=#{product.productDate},
+		</if>	
+		<if test="product.suppDate!=null and product.suppDate!=''">
+			`supp_date`=#{product.suppDate}
+		</if>	
+		WHERE `product_id`=#{product.productId}
+	</update>
+	
+	<!-- 添加商品 -->
+	<insert id="addProduct" parameterType="hashmap">
+		INSERT INTO `product`(`store_id`,`brand_id`,`product_name`,`product_num`,`product_invent`,`type_id`,`supply_id`,`place_id`,`unit_id`,`introduce`,`up_down_state`,`in_price`,`sale_price`,`mem_price`,`create_time`,`update_time`,`create_by`,`update_by`,`product_date`,`supp_date`)
+		VALUE(#{product.storeId},#{product.brandId},#{product.productName},#{product.productNum},#{product.productInvent},#{product.typeId},#{product.supplyId},#{product.placeId},#{product.unitId},#{product.introduce},0,#{product.inPrice},#{product.salePrice},#{product.memPrice},now(),now(),1,1,#{product.productDate},#{product.suppDate})
+	</insert>
+	<!-- 添加	出库单 -->
+	<insert id="insertOutStoreFrom" parameterType="com.auth.entity.Product">
+		INSERT INTO `out_store`
+			(store_id,product_id,out_num,create_time,is_out,user_id)
+				VALUES(#{storeId},#{productId},#{outNum},NOW(),0,#{createBy})
+	</insert>
+	<!-- 更新商品数量 -->
+	<update id="updateProductNum" parameterType="com.auth.entity.Product">
+		UPDATE `product` SET product_invent=product_invent-#{outNum} 
+			where product_id=#{productId} AND store_id=#{storeId}
+	</update>
+	<!-- 根据商品ID和仓库ID查找商品数量 -->
+	<select id="findProductNum" parameterType="java.lang.String"
+		resultMap="Product">
+		SELECT * FROM `product`
+		  where product_id=#{productId} AND store_id=#{storeId}
+	</select>
+	
+	<!-- 修改商品的上下架状态 -->
+	<update id="changeState" parameterType="com.auth.entity.Product">
+		UPDATE `product` SET 
+		<if test="upDownState!=null and upDownState!=''">
+			up_down_state=#{upDownState}
+		</if>
+		WHERE `product_id`=#{productId}
+	</update>
+		<!-- ······················wy··································· -->
+	<!--查询库存，判断调货量是否小于库存  -->
+	<select id="countProduct" parameterType="Product" resultType="Integer">
+		SELECT product_invent FROM  product WHERE product_id=#{productId}
+	</select>
+	<!-- 先将结果集插入到商品表，再修改插入的信息（仓库id,编号，数量）
+		下面两个sql语句需用事务保证一致性，注意product_id不同（查询插入是源商品id，修改时目标商品id）
+	 -->
+	<insert id="insertSelectResult" parameterType="Product" >
+	INSERT INTO product 
+	(store_id,brand_id, product_name,type_id,supply_id,place_id,
+	unit_id,introduce,up_down_state,in_price,sale_price,mem_price,create_time,update_time,create_by,update_by
+	,imgs,product_date,supp_date) 
+	SELECT store_id,brand_id, product_name,type_id,supply_id,place_id,
+	unit_id,introduce,up_down_state,in_price,sale_price,mem_price,create_time,update_time,create_by,update_by
+	,imgs,product_date,supp_date
+	FROM product WHERE product_id = #{productId}
+	</insert>
+	<update id="updateInsertInfo" parameterType="Product">
+		UPDATE product SET store_id=#{storeId} ,product_num=#{productNum},product_invent=#{productInvent} WHERE product_id=#{productId}
+	</update>
+	<select id="getNewProductId" resultType="Integer">
+		SELECT MAX(product_id)  FROM product
+	</select>
+	<!--根据商品编码查商品信息：调货编码验证 -->
+	<select id="findProductByNum" parameterType="Product" resultType="int">
+		SELECT COUNT(0) FROM product WHERE product_num = #{productNum}
+	</select>
+	<!--根据商品id查商品信息。返回Product -->
+	<select id="selectProductByPid" parameterType="Integer" resultMap="Product">
+		SELECT * from product where product_id=#{productId}
+	</select>
+	<!-- ·················wy········································ -->
+</mapper>

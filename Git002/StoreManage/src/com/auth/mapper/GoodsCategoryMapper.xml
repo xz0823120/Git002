@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.auth.mapper.GoodsCategoryMapper" >
+  <resultMap id="goodsCategoryMapper" type="com.auth.entity.GoodsCategory" >
+    <id column="type_id" property="typeId" jdbcType="INTEGER" />
+    <result column="parent_id" property="parentId" jdbcType="INTEGER" />
+    <result column="type_name" property="typeName" jdbcType="VARCHAR" />
+    <result column="type_desc" property="typeDesc" jdbcType="VARCHAR" />
+    <result column="type_code" property="typeCode" jdbcType="VARCHAR" />
+  </resultMap>
+  
+  <!-- 查询显示商品各级分类 -->
+  <select id="queryAllType" parameterType="java.lang.Integer" resultMap="goodsCategoryMapper">
+  		SELECT * FROM product_type WHERE parent_id =#{parentId}
+  </select>
+  
+  <!-- 通过（分类编码）typeCode查询数据 -->
+  <select id="queryByTypeCode" parameterType="java.lang.String" resultMap="goodsCategoryMapper">
+  		SELECT * FROM product_type WHERE type_code =#{typeCode}
+  </select>
+  
+  <!-- 通过分类id查询数据 -->
+  <select id="queryByTypeId" parameterType="java.lang.Integer" resultMap="goodsCategoryMapper">
+  		SELECT * FROM product_type WHERE type_id =#{typeId}
+  </select>
+  
+  <!-- 添加分类 -->
+  <insert id="saveType" parameterType="com.auth.entity.GoodsCategory">
+  	insert into product_type (parent_id, type_name, type_desc, type_code)
+    	values (#{parentId}, #{typeName},#{typeDesc}, #{typeCode})
+  </insert>
+  
+  <!-- 修改分类 -->
+  <update id="updateType" parameterType="com.auth.entity.GoodsCategory">
+  	update product_type set type_name=#{typeName},type_desc=#{typeDesc} 
+  		where type_id=#{typeId}
+  </update>
+  
+  <!-- 查询是否为一级分类 -->
+  <select id="queryChildType" parameterType="java.lang.Integer"  resultMap="goodsCategoryMapper">
+  	SELECT * FROM product_type WHERE parent_id =#{parentId}
+  </select>
+  
+  </mapper>

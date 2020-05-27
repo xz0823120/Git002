@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.auth.mapper.TransshipmentMapper">
+	<resultMap type="com.auth.entity.Transshipment" id="Transshipment">
+		<id property="transId" column="trans_id" />
+		<result property="sourceStoreId" column="source_store_id" />
+		<result property="sourceProductId" column="source_product_id" />
+		<result property="targetStoreId" column="target_store_id" />
+		<result property="targetProductId" column="target_product_id" />
+		<result property="transNum" column="trans_num" />
+		<result property="auditState" column="audit_state" />
+		<result property="createBy" column="create_by" />
+		<result property="createTime" column="create_time" />
+	</resultMap>
+	<!-- 向调货表插入数据（产品service层） -->
+	<insert id="insertIntoTransshipment" parameterType="Transshipment">
+	INSERT INTO `transshipment`
+		(source_store_id,source_product_id,target_store_id,target_product_id,trans_num,audit_state,create_by,create_time)
+ 	VALUES
+ 		(#{sourceStoreId},#{sourceProductId},#{targetStoreId},#{targetProductId},#{transNum},'0',#{createBy},NOW())
+	</insert>
+	
+	<!-- 查询调货信息，可模糊匹配  -->
+	<select id="selectTransshipment" parameterType="java.util.HashMap"
+		resultMap="Transshipment">
+		SELECT *,`GET_SSID_NAME`(source_store_id) as sourceStoreName,
+		`GET_SPID_NAME`(source_product_id) as sourceProductName,
+		`GET_TSID_NAME`(target_store_id) as targetStoreName,
+		`GET_TPID_NAME`(target_product_id) as targetProductName,
+		`FN_GET_USER`(create_by) as  createName
+		 FROM transshipment  	
+		<where>
+			<if test="transshipment.sourceStoreId!=null and transshipment.sourceStoreId!=''">
+				and source_store_id = #{transshipment.sourceStoreId}
+			</if>
+			<if test="transshipment.targetStoreId!=null and transshipment.targetStoreId!=''">
+				and target_store_id = #{transshipment.targetStoreId}
+			</if>
+			
+			<!-- ~~~~~~~~~ -->
+			<if test="transshipment.createName!=null and transshipment.createName!=''">
+				and `FN_GET_USER`(create_by)  LIKE CONCAT('%',#{transshipment.createName},'%')
+			</if>
+			
+			<if test="transshipment.sourceProductName!=null and transshipment.sourceProductName!=''">
+				and `GET_SPID_NAME`(source_product_id) LIKE CONCAT('%',#{transshipment.sourceProductName},'%')
+			</if>
+			
+			<if test="transshipment.targetProductName!=null and transshipment.targetProductName!=''">
+			and `GET_TPID_NAME`(target_product_id) LIKE CONCAT('%',#{transshipment.targetProductName},'%')
+			</if>
+		</where>
+		ORDER BY create_time DESC
+		LIMIT #{page.pageIndex},#{page.pageNum}
+	
+	</select>
+	
+	<!-- 查询调货总数 -->
+	<select id="transshipmentCount" parameterType="java.util.HashMap"
+		resultType="int">
+		SELECT COUNT(0) FROM transshipment
+		<where>
+			<if test="transshipment.sourceStoreId!=null and transshipment.sourceStoreId!=''">
+				and source_store_id = #{sourceStoreId}
+			</if>
+			<if test="transshipment.targetStoreId!=null and transshipment.targetStoreId!=''">
+				and target_store_id = #{targetStoreId}
+			</if>
+		
+		<!--  -->
+			<if test="transshipment.createBy!=null and transshipment.createBy!=''">
+				AND create_by=#{createBy}
+			</if>
+			
+			<if test="transshipment.sourceProductName!=null and transshipment.sourceProductName!=''">
+				and `GET_SPID_NAME`(source_product_id) LIKE CONCAT('%',#{transshipment.sourceProductName},'%')
+			</if>
+			<if test="transshipment.targetStoreId!=null and transshipment.targetStoreId!=''">
+			and `GET_TSID_NAME`(target_store_id) LIKE CONCAT('%',#{transshipment.targetStoreName},'%')
+			</if>
+			
+		</where>
+	</select>
+	
+	<!-- 完成调货 -->
+	<update id="confirmTransshipment" parameterType="Transshipment" >
+		UPDATE transshipment SET audit_state =1 WHERE trans_id = #{transId}
+	</update>
+	<!-- 完成调货修改源仓库原商品数量 Transshipment改为-->
+	<update id="updateSourceNum" parameterType="Transshipment">
+		UPDATE product   SET product_invent= product_invent-#{transNum} WHERE product_id=#{sourceProductId} AND store_id=#{sourceStoreId}
+	</update>
+
+</mapper>

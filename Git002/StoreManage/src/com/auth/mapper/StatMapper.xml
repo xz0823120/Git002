@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.auth.mapper.StatMapper">
+	<resultMap id="statResult" type="com.auth.entity.Stat">
+		<id column="product_id" property="productId" jdbcType="INTEGER" />
+	    <result column="store_id" property="storeId" jdbcType="INTEGER" />
+	    <result column="brand_id" property="brandId" jdbcType="INTEGER" />
+	    <result column="product_name" property="productName" jdbcType="VARCHAR" />
+	    <result column="product_num" property="productNum" jdbcType="VARCHAR" />
+	    <result column="product_invent" property="productInvent" jdbcType="DECIMAL" />
+	    <result column="type_id" property="typeId" jdbcType="INTEGER" />
+	    <result column="supply_id" property="supplyId" jdbcType="INTEGER" />
+	    <result column="place_id" property="placeId" jdbcType="INTEGER" />
+	    <result column="unit_id" property="unitId" jdbcType="INTEGER" />
+	    <result column="up_down_state" property="upDownState" jdbcType="CHAR" />
+	    <result column="in_price" property="inPrice" jdbcType="DECIMAL" />
+	    <result column="sale_price" property="salePrice" jdbcType="DECIMAL" />
+	    <result column="mem_price" property="memPrice" jdbcType="DECIMAL" />
+	    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+		<result column="buy_id" property="buyId" jdbcType="INTEGER"/>
+		<result column="buy_num" property="buyNum" jdbcType="DECIMAL"/>
+		<result column="fact_buy_num" property="factBuyNum" jdbcType="DECIMAL" />
+  		<result column="buy_time" property="buyTime" jdbcType="TIMESTAMP" />
+		<result column="startTime" property="startTime" jdbcType="TIMESTAMP" />
+   	 	<result column="endTime" property="endTime" jdbcType="TIMESTAMP" />
+		<result column="buy_user" property="buyUser" jdbcType="VARCHAR" />
+    	<result column="phone" property="phone" jdbcType="VARCHAR" />
+	</resultMap>
+	<!-- 统计库存不足的商品 -->
+	<select id="statUnderstock" parameterType="int" resultMap="statResult">
+		SELECT `product_id`,`GET_STORE_NAME`(`store_id`) AS storeName,`GET_BRAND_NAME`(`brand_id`) AS brandName,
+		`product_name`,`product_num`,`product_invent`,`GET_RPODUCT_TYPE_NAME`(`type_id`) AS typeName,
+		`GET_SUPPLY_NAME`(`supply_id`) AS supplyName,`GET_PLACE_NAME`(`place_id`) AS placeName,
+		`GET_UNIT_NAME`(`unit_id`) AS unitName,`up_down_state`,`sale_price`,`create_time` FROM `product`
+		
+		WHERE `store_id`= #{storeId} AND `product_invent` &lt; 5.00
+		ORDER BY `create_time` DESC
+	</select>
+	<!-- 统计商品的损耗比 -->
+	<select id="statLossRatio" parameterType="java.util.HashMap" resultMap="statResult">
+		SELECT `product_id`,`GET_STORE_NAME`(`store_id`) AS storeName,`GET_BRAND_NAME`(`brand_id`) AS brandName,
+			`product_name`,`product_num`,`product_invent`,`GET_RPODUCT_TYPE_NAME`(`type_id`) AS typeName,
+			`GET_SUPPLY_NAME`(`supply_id`) AS supplyName,`GET_PLACE_NAME`(`place_id`) AS placeName,
+			`GET_UNIT_NAME`(`unit_id`) AS unitName,GET_LOSSNUM(`product_id`,#{storeId},#{batchId}) AS getLossNum 
+		FROM `product`
+		WHERE `store_id`=#{storeId} AND `product_id` = (SELECT `product_id` FROM `store_check` WHERE `store_id`=#{storeId} AND `batch_id` =#{batchId})
+		ORDER BY getLossNum DESC
+	</select>
+	<!-- 统计商品的销售比 -->
+	<select id="statMarketRatio" parameterType="com.auth.entity.Stat" resultMap="statResult">
+		SELECT `product_id`,`GET_STORE_NAME`(`store_id`) AS storeName,`GET_BRAND_NAME`(`brand_id`) AS brandName,
+			`product_name`,`product_num`,`product_invent`,`GET_RPODUCT_TYPE_NAME`(`type_id`) AS typeName,
+			`GET_SUPPLY_NAME`(`supply_id`) AS supplyName,`GET_PLACE_NAME`(`place_id`) AS placeName,
+			`GET_UNIT_NAME`(`unit_id`) AS unitName,GET_MARKETRATIO(`product_id`,#{storeId},#{startTime},#{endTime}) AS getMarketRatio 
+		FROM `product`
+		WHERE `store_id`=#{storeId}
+		ORDER BY getMarketRatio DESC
+	</select>
+	<!-- 统计下架商品 -->
+	<select id="statOutProduct" parameterType="int" resultMap="statResult">
+		SELECT `product_id`,`GET_STORE_NAME`(`store_id`) AS storeName,`GET_BRAND_NAME`(`brand_id`) AS brandName,
+		`product_name`,`product_num`,`product_invent`,`GET_RPODUCT_TYPE_NAME`(`type_id`) AS typeName,
+		`GET_SUPPLY_NAME`(`supply_id`) AS supplyName,`GET_PLACE_NAME`(`place_id`) AS placeName,
+		`GET_UNIT_NAME`(`unit_id`) AS unitName,`up_down_state`,`sale_price`,`create_time`,`supp_date` FROM `product`
+		
+		WHERE `store_id`= #{storeId} AND `up_down_state` = '0'
+	</select>
+	<!-- 统计规定时间内的采购情况 -->
+	<select id="statPurchase" parameterType="com.auth.entity.Stat" resultMap="statResult">
+		SELECT `buy_id`,productName(`product_id`,#{storeId}) AS productName,GET_STORE_NAME(`store_id`) AS storeName,`buy_num`,
+				`fact_buy_num`,GET_UNITNAME_PROID(`product_id`) AS unitName,GET_SUPPLY_NAME(`supply_id`) AS supplyName,GET_PLACE_NAME(`place_id`) AS placeName,
+				`buy_user`,`phone` FROM `buy_list`
+		WHERE `buy_time` &gt; #{startTime} AND `buy_time` &lt; #{endTime} AND `store_id` = #{storeId}
+		AND `is_in` = 1;
+	</select>
+	<!-- 统计不同分类下的库存情况 -->
+	<select id="statInvent" parameterType="int" resultMap="statResult" >
+		SELECT `store_id`,GET_STORE_NAME(`store_id`) AS storeName,GET_RPODUCT_TYPE_NAME(`type_id`) AS typeName,SUM(`product_invent`) AS productInvent,
+			GET_UNIT_NAME(`unit_id`) AS unitName
+		  FROM `product` 
+		WHERE `store_id` = #{storeId}
+		GROUP BY `type_id`
+	</select>
+</mapper>
